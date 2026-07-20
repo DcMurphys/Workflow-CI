@@ -14,6 +14,11 @@ jobs:
     name: Set up job
     runs-on: ubuntu-latest
 
+    env:
+      MLFLOW_TRACKING_USERNAME: DcMurphys
+      MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+      MLFLOW_TRACKING_URI: https://dagshub.com/dharma.dwicahaya/customer-churn-prediction-system-workflow-ci.mlflow 
+
     steps:
       # 2) Run actions/checkout
       - name: Run actions/checkout
