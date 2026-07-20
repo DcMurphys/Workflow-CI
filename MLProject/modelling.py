@@ -103,6 +103,22 @@ def get_x_and_y(df, target_col):
 
 
 # ===== FUNGSI HELPER TERKAIT MLFLOW MANUAL LOGGING =====
+def setup_tracking(experiment_name, dagshub_repo_owner=None, dagshub_repo_name=None):
+    """
+    Setup MLflow dan Dagshub (apabila ada dan ingin menerapkan penilaian Advanced)
+    """
+    if dagshub_repo_owner and dagshub_repo_name:
+        import dagshub
+
+        dagshub.init(
+            repo_owner=dagshub_repo_owner,
+            repo_name=dagshub_repo_name,
+            mlflow=True
+        )
+    
+    mlflow.set_experiment(experiment_name)
+
+
 def fit_search(search, X_train, y_train):
     """
     Pencarian model dengan parameter terbaik berdasarkan hasil cross validation scoring
@@ -516,7 +532,14 @@ def run_tracked_experiment(
             raise
 
 
-# ===== EKSEKUSI TRACKING EXPERIMENT TUNED MODEL DENGAN MLFLOW (GITHUB ACTIONS) =====
+# ===== EKSEKUSI TRACKING EXPERIMENT TUNED MODEL DENGAN MLFLOW + DAGSHUB =====
+# Setup tracking experiment 
+setup_tracking(
+     experiment_name="gradient_boost_tuned",
+     dagshub_repo_name="customer-churn-prediction-system-workflow-ci",
+     dagshub_repo_owner="dharma.dwicahaya"
+)
+
 # Memperoleh nilai random state untuk menjaga keacakan nilai pada setiap skenario
 RANDOM_STATE = 126 
 
@@ -575,7 +598,7 @@ search = RandomizedSearchCV(
      random_state=RANDOM_STATE
 )
 
-# Melacak eksperimen model hasil tuning dengan MLflow manual log 
+# Melacak eksperimen model hasil tuning dengan MLflow manual log + Dagshub
 mlflow.autolog(disable=True)
 result = run_tracked_experiment(
     search=search,
