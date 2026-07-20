@@ -20,9 +20,6 @@ entry_points:
       n_splits:
         type: float
         default: 25
-      random_state:
-        type: float
-        default: 126
 
     command: >
       python MLProject/modelling.py
@@ -31,4 +28,3 @@ entry_points:
         --target_col {target_col}
         --n_iter {n_iter}
         --n_splits {n_splits}
-        --random_state {random_state} 
