@@ -1,6 +1,6 @@
 name: customer-churn-prediction-system
 
-python_env: conda.yaml
+python_env: MLProject/conda.yaml
 
 entry_points:
   main:
@@ -25,7 +25,7 @@ entry_points:
         default: 126
 
     command: >
-      python "MLProject/modelling.py"
+      python MLProject/modelling.py
         --train_path {train_path}
         --test_path {test_path}
         --target_col {target_col}
