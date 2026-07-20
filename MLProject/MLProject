@@ -5,26 +5,16 @@ python_env: conda.yaml
 entry_points:
   main:
     parameters:
-      train_path:
-        type: str
-        default: "telco_preprocessing/train_pca.csv"
-      test_path:
-        type: str
-        default: "telco_preprocessing/train_pca.csv"
-      target_col:
-        type: str
-        default: "Churn Label"
-      n_iter:
-        type: float
-        default: 25
-      n_splits:
-        type: float
-        default: 25
+      train_path: {type: str, default: "telco_preprocessing/train_pca.csv"} 
+      test_path: {type: str, default: "telco_preprocessing/train_pca.csv"}
+      target_col: {type: str, default: "Churn Label"}
+      n_iter: {type: float, default: 25}
+      n_splits: {type: float, default: 25} 
 
-    command: >
+    command: > 
       python modelling.py
-        --train_path {train_path}
-        --test_path {test_path}
-        --target_col {target_col}
-        --n_iter {n_iter}
-        --n_splits {n_splits}
+      --train_path {train_path}
+      --test_path {test_path}
+      --target_col {target_col}
+      --n_iter {n_iter}
+      --n_splits {n_splits}
