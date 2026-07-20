@@ -37,15 +37,8 @@ logging.basicConfig(
 )
 
 # ===== Konfigurasi awal MLFlow tracking URI =====
-mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
-mlflow_username = os.getenv("MLFLOW_TRACKING_USERNAME")
-mlflow_password = os.getenv("MLFLOW_TRACKING_PASSWORD")
-
-os.environ["MLFLOW_TRACKING_USERNAME"] = mlflow_username
-os.environ["MLFLOW_TRACKING_PASSWORD"] = mlflow_password
-
-mlflow.set_tracking_uri(mlflow_tracking_uri)
-mlflow.set_experiment("gradient-boost-tuned")
+if "MLFLOW_TRACKING_URI" in os.environ:
+    mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
 
 # ===== FUNGSI HELPER TERKAIT UTILITY =====
 def get_input_example(X, n_rows=5):
