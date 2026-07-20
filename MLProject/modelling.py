@@ -37,7 +37,7 @@ logging.basicConfig(
 )
 
 # ===== Konfigurasi awal MLFlow tracking URI =====
-mlflow.set_tracking_uri("file://./mlruns")
+mlflow.set_tracking_uri("./mlruns")
 mlflow.set_experiment("customer-churn-prediction-system")
 
 # ===== FUNGSI HELPER TERKAIT UTILITY =====
