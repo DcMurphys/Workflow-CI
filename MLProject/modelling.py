@@ -530,8 +530,8 @@ parser.add_argument("--n_splits",     type=int)
 args = parser.parse_args()  
 
 # Melakukan load data latih dan data uji 
-train_path = "MLProject/telco_preprocessing/train_pca.csv"
-test_path = "MLProject/telco_preprocessing/test_pca.csv"
+train_path = "telco_preprocessing/train_pca.csv"
+test_path = "telco_preprocessing/test_pca.csv"
 df_train = load_data_csv(train_path)
 df_test = load_data_csv(test_path)
 
