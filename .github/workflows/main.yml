@@ -72,36 +72,42 @@ jobs:
           
           pip install mlflow==2.19.0
 
-      # 6) Run MLflow project
+      # 6) Set MLflow Tracking URI
+      - name: Set MLflow Tracking URI
+        run: | 
+          echo "=== Configuring MLflow Tracking Server ==="
+          echo "MLFLOW_TRACKING_URI=${{ secrets.MLFLOW_TRACKING_URI }}" >> $GITHUB_ENV
+          echo "MLFLOW_TRACKING_USERNAME=${{ secrets.MLFLOW_TRACKING_USERNAME }}" >> $GITHUB_ENV
+          echo "MLFLOW_TRACKING_PASSWORD=${{ secrets.MLFLOW_TRACKING_PASSWORD }}" >> $GITHUB_ENV
+
+          echo "Tracking URI & Credentials has been successfully injected to environment."
+      
+      # 7) Run MLflow project
       - name: Run MLflow project
         run: |
           echo "=== Executing Model Experiment ==="
           
           if ! mlflow run ./MLProject --env-manager=local > mlflow_run.log 2>&1; then
-            echo "::error::Eksekusi MLflow gagal (kemungkinan timeout atau error kode). Menampilkan log:"
+            echo "::error::Eksekusi MLflow gagal! Menampilkan log:"
             cat mlflow_run.log
             exit 1
           fi
 
           echo "Model experiment has been successfully completed. Log saved."
 
-      # 7) Get latest MLflow Run ID 
-      - name: Get latest MLflow Run ID
-        id: extract_run_id
+      # 8) Install Python dependencies (post-training)
+      - name: Install Python Dependencies
         run: | 
-          echo "=== Checking for latest experiment Run ID ==="
-          # Mengekstrak UUID menggunakan regex dari output standar MLflow
-          RUN_ID=$(grep -oP "(?<=Run \(ID ')[^']+" mlflow_run.log | tail -n 1)
+          echo "=== Installing Python Dependencies for Post-Processing ==="
+          pip install --upgrade pip
+          pip install PyGitHub requests
 
-          if [ -z "$RUN_ID" ]; then
-            echo "::error::Run ID (UUID) tidak ditemukan! Format log mungkin tidak sesuai atau API gagal merespons UUID."
-            echo "--- EXECUTION LOG ---"
-            cat mlflow_run.log
-            exit 1
-          fi
-
-          echo "--- SUCCESSFULLY EXTRACTING UUID ---"
-          echo "Latest Run ID: $RUN_ID" 
-
-          # Menyimpan Run ID ke GITHUB_OUTPUT agar bisa digunakan di step/job lain (misal: untuk model registry)
-          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+      # 9) Upload to GitHub (with GitHub Artifacts)
+      - name: Upload to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-log-and-metadata
+          # Upload execution log atau file model ke GitHub Actions
+          path: |
+            mlflow_run.log
+          retention_days: 7 # Waktu penyimpanan artefak sebelum dihapus otomatis
