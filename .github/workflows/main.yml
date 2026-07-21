@@ -44,7 +44,7 @@ jobs:
         with:
           python-version: "3.13.5"
           miniforge-version: latest
-          activate-environment: mlops_env
+          activate-environment: ml-env
 
       # 4) Check Env
       - name: Check Env
@@ -68,7 +68,7 @@ jobs:
       - name: Install dependencies
         run: |
           echo "=== Installing required packages from ./MLProject/conda.yaml ==="
-          conda env update --name mlops_env --file ./MLProject/conda.yaml 
+          conda env update --name ml-env --file ./MLProject/conda.yaml 
           
           pip install mlflow==2.19.0
 
