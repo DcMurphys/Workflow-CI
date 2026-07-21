@@ -4,21 +4,35 @@ on:
   push:
     branches:
       - main
-  pull_request: 
-    branches:
-      - main
+    paths:
+      - "MLProject/**" 
+  workflow_dispatch: # For manual triggering 
+
+env:
+  # Konfigurasi akses MLflow Tracking Server
+  MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+  MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
+  MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+
+  # Pembatasan agar tidak ada API Request timed out
+  MLFLOW_HTTP_REQUEST_MAX_RETRIES: "7"
+  MLFLOW_HTTP_REQUEST_TIMEOUT: "600"
+  MLFLOW_TRACKING_SERVER_REQUEST_TIMEOUT: "600"
+  
+  # Variabel akses file dataset
+  TRAIN_PATH: "./MLProject/telco_preprocessing/train_pca.csv"
+  TEST_PATH: "./MLProject/telco_preprocessing/test_pca.csv"
 
 jobs:
   # 1) Set up job
   mlflow-training-job:
     name: Set up job
+    
     runs-on: ubuntu-latest
-
-    env:
-      MLFLOW_TRACKING_USERNAME: dharma.dwicahaya
-      MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
-      MLFLOW_TRACKING_URI: https://dagshub.com/dharma.dwicahaya/customer-churn-prediction-system-workflow-ci.mlflow 
-
+    defaults:
+      run:
+        shell: bash -el {0} 
+    
     steps:
       # 2) Run actions/checkout
       - name: Run actions/checkout
@@ -26,40 +40,52 @@ jobs:
 
       # 3) Set up Python
       - name: Set up Python environment
-        uses: actions/setup-python@v5
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: '3.13.5'
+          python-version: "3.13.5"
+          miniforge-version: latest
+          activate-environment: mlops_env
 
       # 4) Check Env
       - name: Check Env
         run:  |
-          echo "=== Python Version ==="
-          python --version
+          echo "=== Environment Variables Checking ==="
+          echo "MLflow tracking URI: Configured"
+
+          DATASETS=("$TRAIN_PATH" "$TEST_PATH")
+
+          for filepath in "${DATASET[@]}"; do
+            if [ ! -f "$filepath" ]; then
+              echo "::error::File dataset tidak ditemukan pada path: $filepath!"
+              exit 1
+            fi
+            echo "File divalidasi: $filepath"
+          done
           
-          echo "=== Conda Version ==="
-          conda --version
-
-          echo "=== Directory Structure ==="
-          pwd
-          ls -la
-
-          echo "=== MLProject Directory Contents==="
-          ls -la MLProject/
+          echo "Dataset berhasil divalidasi dan siap digunakan."
 
       # 5) Install dependencies
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          echo "=== Installing required packages from ./MLProject/conda.yaml ==="
+          conda env update --name mlops_env --file ./MLProject/conda.yaml 
+          
           pip install mlflow==2.19.0
 
       # 6) Run MLflow project
       - name: Run MLflow project
         run: |
-          mlflow run ./MLProject --env-manager=local
+          echo "=== Executing Model Experiment ==="
+          if ! mlflow run ./MLProject --env-manager=local > mlflow_run.log 2>&1; then
+            echo "::error::Eksekusi MLflow gagal (kemungkinan timeout atau error kode). Menampilkan log:"
+            cat mlflow_run.log
+            exit 1
+          fi
 
       # 7) Get latest MLflow run_id 
       - name: Get latest MLflow run_id
         run: | 
+          echo "=== Checking for latest experiment run_id ==="
           RUN_ID=$(ls -td mlruns/0/*/ | head -n 1 | cut -d'/' -f3)
           echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
           echo "Latest run_id: $RUN_ID"  
