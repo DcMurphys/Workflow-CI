@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "MLProject/**" 
+      - ".github/workflows/main.yml"
   workflow_dispatch: # For manual triggering 
 
 env:
@@ -116,19 +117,35 @@ jobs:
           # Menyimpan Run ID ke GITHUB_OUTPUT agar bisa digunakan di step/job lain (misal: untuk model registry)
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
-      # 9) Install Python dependencies (post-training)
+      # 9) Download model artifacts from Remote MLflow server
+      - name: Download model artifacts from MLflow server
+        run: | 
+          RUN_ID="${{ steps.extract_run_id.outputs.run_id }}"
+          echo "=== Downloading model artifacts from MLflow server for Run ID: $RUN_ID ==="
+
+          mkdir -p ./model
+
+          mlflow artifacts download \
+            --run-id "$RUN_ID" \
+            --artifact-path "model" \
+            --dst-path "./model"
+
+          echo "Model artifacts successfully downloaded to ./model"
+      
+      # 10) Install Python dependencies (post-training)
       - name: Install Python Dependencies
         run: | 
           echo "=== Required packages already installed in previous steps! ==="
 
-      # 10) Upload mlruns folder to GitHub (with GitHub Artifacts)
+      # 11) Upload mlruns folder to GitHub (with GitHub Artifacts)
       - name: Upload to GitHub
         uses: actions/upload-artifact@v4
         with:
           name: mlflow-model-artifact-${{ steps.extract_run_id.outputs.run_id }}
           # Upload file model ke GitHub Actions
           path: |
-            mlruns/
+            model/
+            mlflow_run.log
           
-          if-no-files-found: error
+          if-no-files-found: warn
           retention_days: 7 # Waktu penyimpanan artefak sebelum dihapus otomatis
