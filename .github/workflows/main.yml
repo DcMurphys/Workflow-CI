@@ -14,7 +14,7 @@ env:
   MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
   MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
 
-  # Pembatasan agar tidak ada API Request timed out
+  # Pembatasan agar tidak ada API Request timed out error
   MLFLOW_HTTP_REQUEST_MAX_RETRIES: "7"
   MLFLOW_HTTP_REQUEST_TIMEOUT: "600"
   MLFLOW_TRACKING_SERVER_REQUEST_TIMEOUT: "600"
@@ -94,20 +94,41 @@ jobs:
           fi
 
           echo "Model experiment has been successfully completed. Log saved."
+      
+      # 8) Get latest MLflow Run ID
+      - name: Get latest MLflow Run ID
+        id: extract_run_id
+        run: |
+          echo "=== Checking for latest experiment Run ID ==="
+          # Mengekstrak UUID menggunakan regex dari output standar MLflow
+          RUN_ID=$(grep -oP "(?<=Run \(ID ')[^']+" mlflow_run.log | tail -n 1)
 
-      # 8) Install Python dependencies (post-training)
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::Run ID (UUID) tidak ditemukan! Format log mungkin tidak sesuai atau API gagal merespons UUID."
+            echo "--- EXECUTION LOG ---"
+            cat mlflow_run.log
+            exit 1
+          fi
+
+          echo "--- SUCCESSFULLY EXTRACTING UUID ---"
+          echo "Latest Run ID: $RUN_ID" 
+
+          # Menyimpan Run ID ke GITHUB_OUTPUT agar bisa digunakan di step/job lain (misal: untuk model registry)
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+      # 9) Install Python dependencies (post-training)
       - name: Install Python Dependencies
         run: | 
-          echo "=== Installing Python Dependencies for Post-Processing ==="
-          pip install --upgrade pip
-          pip install PyGitHub requests
+          echo "=== Required packages already installed in previous steps! ==="
 
-      # 9) Upload to GitHub (with GitHub Artifacts)
+      # 10) Upload mlruns folder to GitHub (with GitHub Artifacts)
       - name: Upload to GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: training-log-and-metadata
-          # Upload execution log atau file model ke GitHub Actions
+          name: mlflow-model-artifact-${{ steps.extract_run_id.outputs.run_id }}
+          # Upload file model ke GitHub Actions
           path: |
-            mlflow_run.log
+            mlruns/
+          
+          if-no-files-found: error
           retention_days: 7 # Waktu penyimpanan artefak sebelum dihapus otomatis
