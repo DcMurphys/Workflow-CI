@@ -103,22 +103,6 @@ def get_x_and_y(df, target_col):
 
 
 # ===== FUNGSI HELPER TERKAIT MLFLOW MANUAL LOGGING =====
-def setup_tracking(experiment_name, dagshub_repo_owner=None, dagshub_repo_name=None):
-    """
-    Setup MLflow dan Dagshub (apabila ada dan ingin menerapkan penilaian Advanced)
-    """
-    if dagshub_repo_owner and dagshub_repo_name:
-        import dagshub
-
-        dagshub.init(
-            repo_owner=dagshub_repo_owner,
-            repo_name=dagshub_repo_name,
-            mlflow=True
-        )
-    
-    mlflow.set_experiment(experiment_name)
-
-
 def fit_search(search, X_train, y_train):
     """
     Pencarian model dengan parameter terbaik berdasarkan hasil cross validation scoring
@@ -532,14 +516,7 @@ def run_tracked_experiment(
             raise
 
 
-# ===== EKSEKUSI TRACKING EXPERIMENT TUNED MODEL DENGAN MLFLOW + DAGSHUB =====
-# Setup tracking experiment 
-setup_tracking(
-     experiment_name="gradient_boost_tuned",
-     dagshub_repo_name="customer-churn-prediction-system-workflow-ci",
-     dagshub_repo_owner="dharma.dwicahaya"
-)
-
+# ===== EKSEKUSI TRACKING EXPERIMENT TUNED MODEL DENGAN MLFLOW =====
 # Memperoleh nilai random state untuk menjaga keacakan nilai pada setiap skenario
 RANDOM_STATE = 126 
 
@@ -553,8 +530,8 @@ parser.add_argument("--n_splits",     type=int)
 args = parser.parse_args()  
 
 # Melakukan load data latih dan data uji 
-train_path = "telco_preprocessing/train_pca.csv"
-test_path = "telco_preprocessing/test_pca.csv"
+train_path = os.environ.get("TRAIN_PATH", "./telco_preprocessing/train_pca.csv")
+test_path = os.environ.get("TEST_PATH", "./telco_preprocessing/test_pca.csv")
 df_train = load_data_csv(train_path)
 df_test = load_data_csv(test_path)
 
@@ -598,7 +575,7 @@ search = RandomizedSearchCV(
      random_state=RANDOM_STATE
 )
 
-# Melacak eksperimen model hasil tuning dengan MLflow manual log + Dagshub
+# Melacak eksperimen model hasil tuning dengan MLflow manual log 
 mlflow.autolog(disable=True)
 result = run_tracked_experiment(
     search=search,
