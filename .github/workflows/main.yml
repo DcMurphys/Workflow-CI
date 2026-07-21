@@ -20,8 +20,8 @@ env:
   MLFLOW_TRACKING_SERVER_REQUEST_TIMEOUT: "600"
   
   # Variabel akses file dataset
-  TRAIN_PATH: "MLProject/telco_preprocessing/train_pca.csv"
-  TEST_PATH: "MLProject/telco_preprocessing/test_pca.csv"
+  TRAIN_PATH: "./MLProject/telco_preprocessing/train_pca.csv"
+  TEST_PATH: "./MLProject/telco_preprocessing/test_pca.csv"
 
 jobs:
   # 1) Set up job
@@ -76,16 +76,32 @@ jobs:
       - name: Run MLflow project
         run: |
           echo "=== Executing Model Experiment ==="
+          
           if ! mlflow run ./MLProject --env-manager=local > mlflow_run.log 2>&1; then
             echo "::error::Eksekusi MLflow gagal (kemungkinan timeout atau error kode). Menampilkan log:"
             cat mlflow_run.log
             exit 1
           fi
 
-      # 7) Get latest MLflow run_id 
-      - name: Get latest MLflow run_id
+          echo "Model experiment has been successfully completed. Log saved."
+
+      # 7) Get latest MLflow Run ID 
+      - name: Get latest MLflow Run ID
+        id: extract_run_id
         run: | 
-          echo "=== Checking for latest experiment run_id ==="
-          RUN_ID=$(ls -td mlruns/0/*/ | head -n 1 | cut -d'/' -f3)
-          echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
-          echo "Latest run_id: $RUN_ID"  
+          echo "=== Checking for latest experiment Run ID ==="
+          # Mengekstrak UUID menggunakan regex dari output standar MLflow
+          RUN_ID=$(grep -oP "(?<=Run \(ID ')[^']+" mlflow_run.log | tail -n 1)
+
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::Run ID (UUID) tidak ditemukan! Format log mungkin tidak sesuai atau API gagal merespons UUID."
+            echo "--- EXECUTION LOG ---"
+            cat mlflow_run.log
+            exit 1
+          fi
+
+          echo "--- SUCCESSFULLY EXTRACTING UUID ---"
+          echo "Latest Run ID: $RUN_ID" 
+
+          # Menyimpan Run ID ke GITHUB_OUTPUT agar bisa digunakan di step/job lain (misal: untuk model registry)
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
