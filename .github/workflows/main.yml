@@ -176,7 +176,7 @@ jobs:
           MLMODEL_PATH=$(find "$ROOT_DIR" -name "MLmodel" | head -n 1)
 
           # Exception handling (apabila model gagal ter-log)
-          if []; then
+          if [ -z "$MLMODEL_PATH" ]; then
             echo "::error::File MLmodel not found on $ROOT_DIR! Make sure log_model process done successfully."
 
           # Mengekstrak nama direktori tempat MLmodel berada
