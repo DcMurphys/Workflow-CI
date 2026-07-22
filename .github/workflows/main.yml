@@ -186,7 +186,7 @@ jobs:
           
           # Membangun Docker Model memanfaatkan flag --enable-mlserver agar ukurannya ringan
           mlflow models build-docker \
-            --model-uri "$LOCAL_MODEL_URI"
+            --model-uri "$LOCAL_MODEL_URI" \
             --name "customer-churn-prediction-system:local" \
             --enable-mlserver
 
