@@ -183,12 +183,28 @@ jobs:
           # Mengekstrak nama direktori tempat MLmodel berada
           LOCAL_MODEL_URI=$(dirname "$MLMODEL_PATH")
           echo "Model successfully found at: $LOCAL_MODEL_URI"
-          
-          # Eksekusi build docker
-          mlflow models build-docker \
+
+          # Menentukan nama direktori untuk proses build Docker
+          BUILD_DIR="./docker_build_context"
+
+          echo "=== 1. Generating Dockerfile Context from MLflow ==="
+          mlflow models generate-dockerfile \
             --model-uri "$LOCAL_MODEL_URI" \
-            --name "customer-churn-prediction-system:local" \
+            --output-directory "$BUILD_DIR" \
             --enable-mlserver
+
+          # Mengganti baris 'FROM' paling awal menjadi python:3.13.5-slim
+          sed -i '1s|^FROM .*|FROM python:3.13.5-slim|' "$BUILD_DIR/Dockerfile"
+
+          # Menampilkan isian custom Dockerfile untuk verifikasi di log
+          echo "=== New Dockerfile Contents ==="
+          cat "$BUILD_DIR/Dockerfile"
+          
+          # Eksekusi build Docker
+          echo "=== 2. Building Docker Image ==="
+          docker build -t customer-churn-prediction-system:local "$BUILD_DIR"
+
+          echo "Docker image has been successfully built!"
 
       # 13) Log In to Docker Hub
       - name: Log In to Docker Hub
