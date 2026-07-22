@@ -57,13 +57,13 @@ jobs:
 
           for filepath in "${DATASET[@]}"; do
             if [ ! -f "$filepath" ]; then
-              echo "::error::File dataset tidak ditemukan pada path: $filepath!"
+              echo "::error::Dataset file not found at path: $filepath!"
               exit 1
             fi
-            echo "File divalidasi: $filepath"
+            echo "Validated files: $filepath"
           done
           
-          echo "Dataset berhasil divalidasi dan siap digunakan."
+          echo "Dataset has been already validated and ready to be used."
 
       # 5) Install dependencies
       - name: Install dependencies
@@ -89,7 +89,7 @@ jobs:
           echo "=== Executing Model Experiment ==="
           
           if ! mlflow run ./MLProject --env-manager=local > mlflow_run.log 2>&1; then
-            echo "::error::Eksekusi MLflow gagal! Menampilkan log:"
+            echo "::error::MLflow execution failed! Displaying log:"
             cat mlflow_run.log
             exit 1
           fi
@@ -105,7 +105,7 @@ jobs:
           RUN_ID=$(grep -oP "(?<=Run \(ID ')[^']+" mlflow_run.log | tail -n 1)
 
           if [ -z "$RUN_ID" ]; then
-            echo "::error::Run ID (UUID) tidak ditemukan! Format log mungkin tidak sesuai atau API gagal merespons UUID."
+            echo "::error::Run ID (UUID) not found! Format log might be not compatible or API failed to respond UUID."
             echo "--- EXECUTION LOG ---"
             cat mlflow_run.log
             exit 1
@@ -169,14 +169,14 @@ jobs:
 
           # Menentukan root folder dari artifacts
           ROOT_DIR="./mlruns/$EXP_ID/$RUN_ID/artifacts"
-          echo "=== Searching model directory dynamically on: $ROOT_DIR ==="
+          echo "=== Searching model directory dynamically at: $ROOT_DIR ==="
 
           # Mencari file 'MLmodel' secara otomatis dengan perintah 'find'
           MLMODEL_PATH=$(find "$ROOT_DIR" -name "MLmodel" | head -n 1)
 
           # Exception handling (apabila model gagal ter-log)
           if [ -z "$MLMODEL_PATH" ]; then
-            echo "::error::File MLmodel not found on $ROOT_DIR!"
+            echo "::error::File MLmodel not found at $ROOT_DIR!"
             exit 1
           fi
 
@@ -197,7 +197,7 @@ jobs:
           sed -i '1s|^FROM .*|FROM python:3.13.5-slim|' "$BUILD_DIR/Dockerfile"
 
           # Menampilkan isian custom Dockerfile untuk verifikasi di log
-          echo "=== New Dockerfile Contents ==="
+          echo "--- New Dockerfile Contents ---"
           cat "$BUILD_DIR/Dockerfile"
           
           # Eksekusi build Docker
