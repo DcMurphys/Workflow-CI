@@ -82,13 +82,12 @@ def load_data_csv(env_var_name, default_file_path):
     Memuat dataset dari file .CSV 
     """
     raw_path = os.getenv(env_var_name, default_file_path)
-    file_path = Path(raw_path).resolve() 
+    file_path = Path(raw_path).resolve()
+    print(f"Mencoba membaca dataset dari: {file_path}")
     if not file_path.exists():
         raise FileNotFoundError(f"Terjadi error saat memuat data {file_path}")
-        return None
-    else:
-        print(f"File {file_path} berhasil dimuat!")
-        return pd.read_csv(file_path)
+        
+    return pd.read_csv(file_path)
 
 
 def get_x_and_y(df, target_col):
