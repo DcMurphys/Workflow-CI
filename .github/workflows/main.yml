@@ -21,8 +21,8 @@ env:
   MLFLOW_TRACKING_SERVER_REQUEST_TIMEOUT: "600"
   
   # Variabel akses file dataset
-  TRAIN_PATH: "./MLProject/telco_preprocessing/train_pca.csv"
-  TEST_PATH: "./MLProject/telco_preprocessing/test_pca.csv"
+  TRAIN_PATH: "./telco_preprocessing/train_pca.csv"
+  TEST_PATH: "./telco_preprocessing/test_pca.csv"
 
 jobs:
   # 1) Set up job
