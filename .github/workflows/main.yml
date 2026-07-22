@@ -123,28 +123,37 @@ jobs:
           RUN_ID="${{ steps.extract_run_id.outputs.run_id }}"
           echo "=== Downloading model artifacts from MLflow server for Run ID: $RUN_ID ==="
 
-          mkdir -p ./model
+          # Mengambil Experiment ID dari MLflow
+          EXP_ID=$(python -c "import mlflow; client = mlflow.tracking.MlflowClient(); print(client.get_run('$RUN_ID').info.experiment_id)")
+          echo "Experiment ID: $EXP_ID"
 
+          # Menyusun struktur folder menyerupai direktori 'mlruns'
+          TARGET_DIR="./mlruns/$EXP_ID/$RUN_ID/artifacts"
+          mkdir -p "$TARGET_DIR"
+
+          # Download seluruh artefak
           mlflow artifacts download \
             --run-id "$RUN_ID" \
-            --artifact-path "model" \
-            --dst-path "./model"
+            --dst-path "$TARGET_DIR"
 
-          echo "Model artifacts successfully downloaded to ./model"
+          echo "Model artifacts successfully downloaded to: $TARGET_DIR"
+
+          echo "Downloaded artifact files:"
+          ls -R "$TARGET_DIR"
       
       # 10) Install Python dependencies (post-training)
       - name: Install Python Dependencies
         run: | 
           echo "=== Required packages already installed in previous steps! ==="
 
-      # 11) Upload mlruns folder to GitHub (with GitHub Artifacts)
+      # 11) Upload model artifacts to GitHub (with GitHub Artifacts)
       - name: Upload to GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: mlflow-model-artifact-${{ steps.extract_run_id.outputs.run_id }}
-          # Upload file model ke GitHub Actions
+          name: mlflow-full-mlruns-${{ steps.extract_run_id.outputs.run_id }}
+          # Upload seluruh file artefak ke GitHub Actions
           path: |
-            model/
+            mlruns/
             mlflow_run.log
           
           if-no-files-found: warn
