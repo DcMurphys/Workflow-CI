@@ -163,28 +163,28 @@ jobs:
       - name: Build Docker Model
         run: |
           RUN_ID="${{ steps.extract_run_id.outputs.run_id }}"
-          echo "=== Building Lightweight Docker Model for Run ID: $RUN_ID ==="
 
           # Mengambil Experiment ID
-          EXP_ID=$(python -c "import mlflow; client = mlflow.tracking.MlflowClient(); print(client.get_run('$RUN_ID').info.experiment_id)")
+          EXP_ID=$(RUN_ID="$RUN_ID" python -c "import os, mlflow; print(mlflow.tracking.MlflowClient().get_run(os.environ['RUN_ID']).info.experiment_id)")
 
           # Menentukan root folder dari artifacts
           ROOT_DIR="./mlruns/$EXP_ID/$RUN_ID/artifacts"
-          echo "Searching model directory dynamically on: $ROOT_DIR"
+          echo "=== Searching model directory dynamically on: $ROOT_DIR ==="
 
           # Mencari file 'MLmodel' secara otomatis dengan perintah 'find'
           MLMODEL_PATH=$(find "$ROOT_DIR" -name "MLmodel" | head -n 1)
 
           # Exception handling (apabila model gagal ter-log)
           if [ -z "$MLMODEL_PATH" ]; then
-            echo "::error::File MLmodel not found on $ROOT_DIR! Make sure log_model process done successfully."
+            echo "::error::File MLmodel not found on $ROOT_DIR!"
+            exit 1
+          fi
 
           # Mengekstrak nama direktori tempat MLmodel berada
           LOCAL_MODEL_URI=$(dirname "$MLMODEL_PATH")
-
           echo "Model successfully found at: $LOCAL_MODEL_URI"
           
-          # Membangun Docker Model memanfaatkan flag --enable-mlserver agar ukurannya ringan
+          # Eksekusi build docker
           mlflow models build-docker \
             --model-uri "$LOCAL_MODEL_URI" \
             --name "customer-churn-prediction-system:local" \
