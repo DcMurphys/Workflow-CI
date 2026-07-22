@@ -150,11 +150,75 @@ jobs:
       - name: Upload to GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: mlflow-full-mlruns-${{ steps.extract_run_id.outputs.run_id }}
+          name: mlflow-artifacts-${{ steps.extract_run_id.outputs.run_id }}
           # Upload seluruh file artefak ke GitHub Actions
           path: |
             mlruns/
             mlflow_run.log
           
           if-no-files-found: warn
-          retention_days: 7 # Waktu penyimpanan artefak sebelum dihapus otomatis
+          retention_days: 3 # Waktu penyimpanan artefak sebelum dihapus otomatis
+
+      # 12) Build Docker Model (ukuran ringan)
+      - name: Build Docker Model
+        run: |
+          RUN_ID="${{ steps.extract_run_id.outputs.run_id }}"
+          echo "=== Building Lightweight Docker Model for Run ID: $RUN_ID ==="
+
+          # Mengambil Experiment ID
+          EXP_ID=$(python -c "import mlflow; client = mlflow.tracking.MlflowClient(); print(client.get_run('$RUN_ID').info.experiment_id)")
+
+          # Menentukan root folder dari artifacts
+          ROOT_DIR="./mlruns/$EXP_ID/$RUN_ID/artifacts"
+          echo "Searching model directory dynamically on: $ROOT_DIR"
+
+          # Mencari file 'MLmodel' secara otomatis dengan perintah 'find'
+          MLMODEL_PATH=$(find "$ROOT_DIR" -name "MLmodel" | head -n 1)
+
+          # Exception handling (apabila model gagal ter-log)
+          if []; then
+            echo "::error::File MLmodel not found on $ROOT_DIR! Make sure log_model process done successfully."
+
+          # Mengekstrak nama direktori tempat MLmodel berada
+          LOCAL_MODEL_URI=$(dirname "$MLMODEL_PATH")
+
+          echo "Model successfully found at: $LOCAL_MODEL_URI"
+          
+          # Membangun Docker Model memanfaatkan flag --enable-mlserver agar ukurannya ringan
+          mlflow models build-docker \
+            --model-uri "$LOCAL_MODEL_URI"
+            --name "customer-churn-prediction-system:local" \
+            --enable-mlserver
+
+      # 13) Log In to Docker Hub
+      - name: Log In to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      # 14) Tag Docker Image
+      - name: Tag Docker Image
+        run: |
+          DOCKER_USER="${{ secrets.DOCKER_HUB_USERNAME }}"
+          IMAGE_NAME="customer-churn-prediction-system"
+
+          echo "=== Creating Tag Image for Docker Hub ==="
+
+          # Tag 1: Menggunakan Commit SHA agar setiap build memiliki versi unik (Immutable)
+          docker tag $IMAGE_NAME:local $DOCKER_USER/$IMAGE_NAME:${{ github.sha }}
+
+          # Tag 2: Menggunakan tag 'latest' untuk deployment otomatis
+          docker tag $IMAGE_NAME:local $DOCKER_USER/$IMAGE_NAME:latest
+
+      # 15) Push Docker Image
+      - name: Push Docker Image
+        run: |
+          DOCKER_USER="${{ secrets.DOCKER_HUB_USERNAME }}"
+          IMAGE_NAME="customer-churn-prediction-system"
+
+          echo "=== Uploading Docker Image to Docker Hub Registry ==="
+          docker push $DOCKER_USER/$IMAGE_NAME:${{ github.sha }}
+          docker push $DOCKER_USER/$IMAGE_NAME:latest
+
+          echo "Successfully publishing Docker Image `$IMAGE_NAME` to Docker Hub!"
