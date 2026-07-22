@@ -77,16 +77,18 @@ def sanitize_params(params):
 
 
 # ===== FUNGSI HELPER TERKAIT DATA =====
-def load_data_csv(file_path):
+def load_data_csv(env_var_name, default_file_path):
     """
     Memuat dataset dari file .CSV 
     """
-    try:
-        data = pd.read_csv(file_path)
+    raw_path = os.getenv(env_var_name, default_file_path)
+    file_path = Path(raw_path).resolve() 
+    if not file_path.exists():
+        raise FileNotFoundError(f"Terjadi error saat memuat data {file_path}")
+        return None
+    else:
         print(f"File {file_path} berhasil dimuat!")
-        return data
-    except Exception as error: 
-        print(f"Terjadi error saat memuat data: {error}")
+        return pd.read_csv(file_path)
 
 
 def get_x_and_y(df, target_col):
@@ -389,6 +391,7 @@ def run_tracked_experiment(
 
     with mlflow.start_run(run_name=run_name):
         try:
+            mlflow.autolog(disable=True)
             mlflow.set_tags({
                 "tracking_type": "manual_logging",
                 "run_purpose": "kfold_randomized_search",
@@ -530,10 +533,8 @@ parser.add_argument("--n_splits",     type=int)
 args = parser.parse_args()  
 
 # Melakukan load data latih dan data uji 
-train_path = "telco_preprocessing/train_pca.csv"
-test_path = "telco_preprocessing/test_pca.csv"
-df_train = load_data_csv(train_path)
-df_test = load_data_csv(test_path)
+df_train = load_data_csv("TRAIN_PATH", "telco_preprocessing/train_pca.csv")
+df_test = load_data_csv("TEST_PATH", "telco_preprocessing/test_pca.csv")
 
 # Mengambil variabel X dan y dari data latih dan data uji 
 X_train, y_train = get_x_and_y(df_train, target_col="Churn Label")
@@ -576,7 +577,6 @@ search = RandomizedSearchCV(
 )
 
 # Melacak eksperimen model hasil tuning dengan MLflow manual log 
-mlflow.autolog(disable=True)
 result = run_tracked_experiment(
     search=search,
     X_train=X_train,
