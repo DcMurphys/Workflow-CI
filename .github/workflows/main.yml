@@ -194,11 +194,16 @@ jobs:
             --enable-mlserver
 
           # Mengganti baris 'FROM' paling awal menjadi python:3.13.5-slim
-          sed -i '1s|^FROM .*|FROM python:3.13.5-slim|' "$BUILD_DIR/Dockerfile"
+          DOCKERFILE="$BUILD_DIR/Dockerfile"
+          sed -i '1s|^FROM .*|FROM python:3.13.5-slim|' "$DOCKERFILE"
+
+          # Mengoptimalkan ukuran Docker Image agar mudah di-deploy ke cloud server
+          sed -i 's/pip install/pip install --no-cache-dir/g' "$DOCKERFILE"
+          sed -i '/pip install/ s/$/ \&\& find \/usr\/local -type f -name "*.pyc" -delete \&\& find \/usr\/local -type d -name "__pycache__" -exec rm -rf {} + 2>\/dev\/null || true/' "$DOCKERFILE"
 
           # Menampilkan isian custom Dockerfile untuk verifikasi di log
           echo "--- New Dockerfile Contents ---"
-          cat "$BUILD_DIR/Dockerfile"
+          cat "$DOCKERFILE"
           
           # Eksekusi build Docker
           echo "=== 2. Building Docker Image ==="
