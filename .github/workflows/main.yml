@@ -71,7 +71,7 @@ jobs:
           echo "=== Installing required packages from ./MLProject/conda.yaml ==="
           conda env update --name ml-env --file ./MLProject/conda.yaml 
           
-          pip install mlflow==2.19.0 dagshub==0.7.0
+          pip install mlflow==2.19.0 
 
       # 6) Set MLflow Tracking URI
       - name: Set MLflow Tracking URI
