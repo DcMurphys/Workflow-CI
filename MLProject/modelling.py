@@ -387,7 +387,6 @@ def run_tracked_experiment(
     """
     input_example = get_input_example(X_train)
     feature_names = get_feature_names(X_train)
-    mlflow.set_experiment("gradient_boost_tuned")
 
     with mlflow.start_run(run_name=run_name):
         try:
