@@ -225,11 +225,7 @@ jobs:
           IMAGE_NAME="customer-churn-prediction-system"
 
           echo "=== Creating Tag Image for Docker Hub ==="
-
-          # Tag 1: Menggunakan Commit SHA agar setiap build memiliki versi unik (Immutable)
-          docker tag $IMAGE_NAME:local $DOCKER_USER/$IMAGE_NAME:${{ github.sha }}
-
-          # Tag 2: Menggunakan tag 'latest' untuk deployment otomatis
+          # Menggunakan tag 'latest' untuk deployment otomatis
           docker tag $IMAGE_NAME:local $DOCKER_USER/$IMAGE_NAME:latest
 
       # 15) Push Docker Image
@@ -239,7 +235,6 @@ jobs:
           IMAGE_NAME="customer-churn-prediction-system"
 
           echo "=== Uploading Docker Image to Docker Hub Registry ==="
-          docker push $DOCKER_USER/$IMAGE_NAME:${{ github.sha }}
           docker push $DOCKER_USER/$IMAGE_NAME:latest
 
           echo "Successfully publishing Docker Image `$IMAGE_NAME` to Docker Hub!"
