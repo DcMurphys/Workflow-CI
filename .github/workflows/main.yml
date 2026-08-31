@@ -189,7 +189,7 @@ jobs:
 
           echo "=== Building Docker Serving Image ==="
           # Membangun serving model image dengan perintah native MLflow
-          mlflow models build-docker --model-uri "$LOCAL_MODEL_URI" --name "customer-churn-prediction-system:local" --enable-mlserver --env-manager virtualenv 
+          mlflow models build-docker --model-uri "$LOCAL_MODEL_URI" --name "customer-churn-prediction-system:local" 
           
           echo "Docker image has been successfully built!"
 
