@@ -216,7 +216,7 @@ jobs:
           ENV MLFLOW_MODEL_DIR=/opt/ml/model
 
           # Expose port untuk inference
-          EXPOSE 8000
+          EXPOSE 8080
 
           # Entrypoint untuk menjalankan serving model
           CMD ["mlflow", "models", "serve", "-m", "/opt/ml/model", "--host", "0.0.0.0", "--port", "8080", "--enable-mlserver"]
