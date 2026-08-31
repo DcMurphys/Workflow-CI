@@ -188,8 +188,47 @@ jobs:
           echo "Model successfully found at: $LOCAL_MODEL_URI"
 
           echo "=== Building Docker Serving Image ==="
-          # Membangun serving model image dengan perintah native MLflow
-          mlflow models build-docker --model-uri "$LOCAL_MODEL_URI" --name "customer-churn-prediction-system:local" --enable-mlserver --env-manager virtualenv --base-image python:3.13.5-slim
+          # Menentukan nama direktori untuk proses build Docker
+          BUILD_DIR="./docker_build_context"
+          mkdir -p "$BUILD_DIR"
+
+          # Menyalin artefak model ke dalam build context
+          cp -r "$LOCAL_MODEL_URI" "$BUILD_DIR/model"
+
+          echo "=== 1. Generating Custom Dockerfile ==="
+          cat << 'EOF' > "$BUILD_DIR/Dockerfile"
+          FROM python:3.13.5-slim
+
+          WORKDIR /app
+          
+          # Menyalin file requirements.txt dari artefak MLflow
+          COPY model/requirements.txt .
+
+          # Menginstal dependencies model + MLflow & MLServer, lalu bersihkan cache
+          RUN pip install --no-cache-dir -r requirements.txt mlflow mlserver mlserver-mlflow \
+              && find /usr/local -type f -name "*.pyc" -delete \
+              && find /usr/local -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+
+          # Menyalin seluruh artefak model ke dalam image
+          COPY model /opt/ml/model
+
+          # Set environment variable agar MLflow tahu direktori model
+          ENV MLFLOW_MODEL_DIR=/opt/ml/model
+
+          # Expose port untuk inference
+          EXPOSE 8000
+
+          # Entrypoint untuk menjalankan serving model
+          CMD ["mlflow", "models", "serve", "-m", "/opt/ml/model", "--host", "0.0.0.0", "--port", "8080", "--enable-mlserver"]
+          EOF
+
+          # Menampilkan isian custom Dockerfile untuk verifikasi di log
+          echo "--- New Dockerfile Contents ---"
+          cat "$BUILD_DIR/Dockerfile"
+
+          # Menjalankan proses build docker
+          echo "=== 2. Building Docker Image ==="
+          docker build -t customer-churn-prediction-system:local "$BUILD_DIR"
           
           echo "Docker image has been successfully built!"
 
