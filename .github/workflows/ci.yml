@@ -215,10 +215,24 @@ jobs:
           sed -i 's/pip install/pip install --no-cache-dir/g' "$DOCKERFILE"
           sed -i '/pip install/ s/$/ \&\& find \/usr\/local -type f -name "*.pyc" -delete \&\& find \/usr\/local -type d -name "__pycache__" -exec rm -rf {} + 2>\/dev\/null || true/' "$DOCKERFILE"
 
-          # Mengarahkan port serving ke 5001 (MLServer HTTP Port & MLflow Server Port)
+          # Hapus ENTRYPOINT, CMD, dan EXPOSE bawaan agar tidak saling menimpa
+          sed -i '/ENTRYPOINT/d' "$DOCKERFILE"
+          sed -i '/CMD/d' "$DOCKERFILE"
           sed -i '/EXPOSE/d' "$DOCKERFILE"
-          echo "EXPOSE 5001" >> "$DOCKERFILE"
-          sed -i '/ENTRYPOINT/i ENV MLSERVER_HTTP_PORT=5001\nENV MLFLOW_SERVER_PORT=5001' "$DOCKERFILE"
+          
+          # Menyisipkan Environment Host/Localhost, EXPOSE, dan CMD
+          cat << 'EOF' >> "$DOCKERFILE"
+
+          # Set environment variable agar MLflow & MLServer menerima request dari 0.0.0.0, 127.0.0.1, dan localhost
+          ENV HOST=0.0.0.0
+          ENV MLSERVER_HOST=0.0.0.0
+
+          # Expose port untuk inference
+          EXPOSE 5001
+
+          # Entrypoint untuk menjalankan model serving
+          CMD ["mlflow", "models", "serve", "-m", "/opt/ml/model", "--host", "0.0.0.0", "--port", "5001", "--enable-mlserver"]
+          EOF
           
           # Menampilkan isian custom Dockerfile untuk verifikasi di log
           echo "--- New Dockerfile Contents ---"
