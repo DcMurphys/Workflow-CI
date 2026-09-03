@@ -1,4 +1,4 @@
-name: Customer Churn Modelling Workflow CI Pipeline
+name: Trigger Model Training CI Workflow
 
 on:
   push:
@@ -202,12 +202,24 @@ jobs:
             --enable-mlserver
 
           DOCKERFILE="$BUILD_DIR/Dockerfile"
+
+          # Set Base Image secara eksplisit ke python:3.13.5-slim
           sed -i '1s|^FROM .*|FROM python:3.13.5-slim|' "$DOCKERFILE"
 
-          # Mengoptimalkan ukuran Docker Image agar mudah di-deploy ke cloud server
+          # Nonaktifkan pembentukan pyenv & virtualenv
+          sed -i '/pyenv/d' "$DOCKERFILE"
+          sed -i '/virtualenv/d' "$DOCKERFILE"
+          sed -i '/VIRTUAL_ENV/d' "$DOCKERFILE"
+
+          # Mengoptimalkan ukuran Docker Image & pembersihan cache
           sed -i 's/pip install/pip install --no-cache-dir/g' "$DOCKERFILE"
           sed -i '/pip install/ s/$/ \&\& find \/usr\/local -type f -name "*.pyc" -delete \&\& find \/usr\/local -type d -name "__pycache__" -exec rm -rf {} + 2>\/dev\/null || true/' "$DOCKERFILE"
 
+          # Mengarahkan port serving ke 5001 (MLServer HTTP Port & MLflow Server Port)
+          sed -i '/EXPOSE/d' "$DOCKERFILE"
+          echo "EXPOSE 5001" >> "$DOCKERFILE"
+          sed -i '/ENTRYPOINT/i ENV MLSERVER_HTTP_PORT=5001\nENV MLFLOW_SERVER_PORT=5001' "$DOCKERFILE"
+          
           # Menampilkan isian custom Dockerfile untuk verifikasi di log
           echo "--- New Dockerfile Contents ---"
           cat "$DOCKERFILE"
