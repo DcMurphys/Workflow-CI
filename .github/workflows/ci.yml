@@ -175,15 +175,13 @@ jobs:
           
           echo "=== Building Docker Serving Image ==="
           # Menentukan nama Docker Image
-          IMAGE_NAME="customer-churn-prediction-system:latest"
+          IMAGE_NAME="customer-churn-prediction-system"
 
           # Menjalankan proses build Docker Image
           mlflow models build-docker \
             --env-manager local \
-            --base-image python:3.13.5-slim \
-            --install-mlflow \
-            -m "$MODEL_URI" \
-            -n "$IMAGE_NAME" 
+            --model-uri "$MODEL_URI" \
+            --name "$IMAGE_NAME" 
 
       # 13) Log In to Docker Hub
       - name: Log In to Docker Hub
@@ -196,7 +194,6 @@ jobs:
       - name: Tag Docker Image
         run: |
           DOCKER_USER="${{ secrets.DOCKER_HUB_USERNAME }}"
-          IMAGE_NAME="customer-churn-prediction-system"
 
           echo "=== Creating Tag Image for Docker Hub ==="
           # Menggunakan tag 'latest' untuk deployment otomatis
@@ -205,9 +202,6 @@ jobs:
       # 15) Push Docker Image
       - name: Push Docker Image
         run: |
-          DOCKER_USER="${{ secrets.DOCKER_HUB_USERNAME }}"
-          IMAGE_NAME="customer-churn-prediction-system"
-
           echo "=== Uploading Docker Image to Docker Hub Registry ==="
           docker push $DOCKER_USER/$IMAGE_NAME:latest
 
