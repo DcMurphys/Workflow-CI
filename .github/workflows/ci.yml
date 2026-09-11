@@ -171,7 +171,7 @@ jobs:
           EXP_ID=$(RUN_ID="$RUN_ID" python -c "import os, mlflow; print(mlflow.tracking.MlflowClient().get_run(os.environ['RUN_ID']).info.experiment_id)")
 
           # Menentukan root folder dari artifacts
-          ROOT_DIR="./mlruns/$EXP_ID/$RUN_ID/artifacts"
+          ROOT_DIR="./mlruns/$EXP_ID/$RUN_ID/artifacts/"
           echo "=== Searching model directory dynamically at: $ROOT_DIR ==="
 
           # Mencari file 'MLmodel' secara otomatis dengan perintah 'find'
