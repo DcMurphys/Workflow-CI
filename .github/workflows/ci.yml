@@ -162,31 +162,17 @@ jobs:
           if-no-files-found: warn
           retention_days: 3 # Waktu penyimpanan artefak sebelum dihapus otomatis
 
-      # 12) Build Docker Model (ukuran ringan)
+      # 12) Build Docker Model (lightweight)
       - name: Build Docker Model
         run: |
           RUN_ID="${{ steps.extract_run_id.outputs.run_id }}"
 
           # Mengambil Experiment ID
-          EXP_ID=$(RUN_ID="$RUN_ID" python -c "import os, mlflow; print(mlflow.tracking.MlflowClient().get_run(os.environ['RUN_ID']).info.experiment_id)")
+          EXP_ID=$(python -c "import mlflow; client = mlflow.tracking.MlflowClient(); print(client.get_run('$RUN_ID').info.experiment_id)")
 
-          # Menentukan root folder dari artifacts
-          ROOT_DIR="./mlruns/$EXP_ID/$RUN_ID/artifacts/"
-          echo "=== Searching model directory dynamically at: $ROOT_DIR ==="
-
-          # Mencari file 'MLmodel' secara otomatis dengan perintah 'find'
-          MLMODEL_PATH=$(find "$ROOT_DIR" -name "MLmodel" | head -n 1)
-
-          # Exception handling (apabila model gagal ter-log)
-          if [ -z "$MLMODEL_PATH" ]; then
-            echo "::error::File MLmodel not found at $ROOT_DIR!"
-            exit 1
-          fi
-
-          # Mengekstrak nama direktori tempat MLmodel berada
-          LOCAL_MODEL_URI=$(dirname "$MLMODEL_PATH")
-          echo "Model successfully found at: $LOCAL_MODEL_URI"
-
+          # Mendapatkan Model URI
+          MODEL_URI="./mlruns/$EXP_ID/$RUN_ID/artifacts/model"
+          
           echo "=== Building Docker Serving Image ==="
           # Menentukan nama Docker Image
           IMAGE_NAME = "customer-churn-prediction-system:latest"
@@ -196,7 +182,7 @@ jobs:
             --env-manager local \
             --base-image python:3.13.5-slim \
             --install-mlflow \
-            -m "$LOCAL_MODEL_URI" \
+            -m "$MODEL_URI" \
             -n "$IMAGE_NAME" 
 
       # 13) Log In to Docker Hub
