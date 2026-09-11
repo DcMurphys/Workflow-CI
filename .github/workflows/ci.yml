@@ -68,7 +68,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install \
-            mlflow==3.5.1 \
+            mlflow==2.19.0 \
             cloudpickle==3.1.1 \
             numpy==2.3.4 \
             pandas==2.3.3 \
@@ -168,10 +168,24 @@ jobs:
           RUN_ID="${{ steps.extract_run_id.outputs.run_id }}"
 
           # Mengambil Experiment ID
-          EXP_ID=$(python -c "import mlflow; client = mlflow.tracking.MlflowClient(); print(client.get_run('$RUN_ID').info.experiment_id)")
+          EXP_ID=$(RUN_ID="$RUN_ID" python -c "import os, mlflow; print(mlflow.tracking.MlflowClient().get_run(os.environ['RUN_ID']).info.experiment_id)")
 
-          # Mendapatkan Model URI
-          MODEL_URI="./mlruns/$EXP_ID/$RUN_ID/artifacts/model"
+          # Menentukan root folder dari artifacts
+          ROOT_DIR="./mlruns/$EXP_ID/$RUN_ID/artifacts"
+          echo "=== Searching model directory dynamically at: $ROOT_DIR ==="
+
+          # Mencari file 'MLmodel' secara otomatis dengan perintah 'find'
+          MLMODEL_PATH=$(find "$ROOT_DIR" -name "MLmodel" | head -n 1)
+
+          # Exception handling (apabila model gagal ter-log)
+          if [ -z "$MLMODEL_PATH" ]; then
+            echo "::error::File MLmodel not found at $ROOT_DIR!"
+            exit 1
+          fi
+
+          # Mengekstrak nama direktori tempat MLmodel berada
+          LOCAL_MODEL_URI=$(dirname "$MLMODEL_PATH")
+          echo "Model successfully found at: $LOCAL_MODEL_URI"
           
           echo "=== Building Docker Serving Image ==="
           # Menentukan nama Docker Image
@@ -180,7 +194,7 @@ jobs:
           # Menjalankan proses build Docker Image
           mlflow models build-docker \
             --env-manager local \
-            --model-uri "$MODEL_URI" \
+            --model-uri "$LOCAL_MODEL_URI" \
             --name "$IMAGE_NAME" 
 
       # 13) Log In to Docker Hub
