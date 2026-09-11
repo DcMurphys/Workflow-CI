@@ -68,7 +68,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install \
-            mlflow==2.19.0 \
+            mlflow==3.5.1 \
             cloudpickle==3.1.1 \
             numpy==2.3.4 \
             pandas==2.3.3 \
@@ -188,61 +188,16 @@ jobs:
           echo "Model successfully found at: $LOCAL_MODEL_URI"
 
           echo "=== Building Docker Serving Image ==="
-          # Menentukan nama direktori untuk proses build Docker
-          BUILD_DIR="./docker_build_context"
-          mkdir -p "$BUILD_DIR"
+          # Menentukan nama Docker Image
+          IMAGE_NAME = "customer-churn-prediction-system:latest"
 
-          # Menyalin artefak model ke dalam build context
-          cp -r "$LOCAL_MODEL_URI" "$BUILD_DIR/model"
-
-          echo "=== 1. Generating Custom Dockerfile ==="
-          mlflow models generate-dockerfile \
-            --model-uri "$LOCAL_MODEL_URI" \
-            --output-directory "$BUILD_DIR" \
-            --enable-mlserver
-
-          DOCKERFILE="$BUILD_DIR/Dockerfile"
-
-          # Set Base Image secara eksplisit ke python:3.13.5-slim
-          sed -i '1s|^FROM .*|FROM python:3.13.5-slim|' "$DOCKERFILE"
-
-          # Nonaktifkan pembentukan pyenv & virtualenv
-          sed -i '/pyenv/d' "$DOCKERFILE"
-          sed -i '/virtualenv/d' "$DOCKERFILE"
-          sed -i '/VIRTUAL_ENV/d' "$DOCKERFILE"
-
-          # Mengoptimalkan ukuran Docker Image & pembersihan cache
-          sed -i 's/pip install/pip install --no-cache-dir/g' "$DOCKERFILE"
-          sed -i '/pip install/ s/$/ \&\& find \/usr\/local -type f -name "*.pyc" -delete \&\& find \/usr\/local -type d -name "__pycache__" -exec rm -rf {} + 2>\/dev\/null || true/' "$DOCKERFILE"
-
-          # Hapus ENTRYPOINT, CMD, dan EXPOSE bawaan agar tidak saling menimpa
-          sed -i '/ENTRYPOINT/d' "$DOCKERFILE"
-          sed -i '/CMD/d' "$DOCKERFILE"
-          sed -i '/EXPOSE/d' "$DOCKERFILE"
-          
-          # Menyisipkan Environment Host/Localhost, EXPOSE, dan CMD
-          cat << 'EOF' >> "$DOCKERFILE"
-
-          # Set environment variable agar MLflow & MLServer menerima request dari 0.0.0.0, 127.0.0.1, dan localhost
-          ENV HOST=0.0.0.0
-          ENV MLSERVER_HOST=0.0.0.0
-
-          # Expose port untuk inference
-          EXPOSE 5001
-
-          # Entrypoint untuk menjalankan model serving
-          CMD ["mlflow", "models", "serve", "-m", "/opt/ml/model", "--host", "0.0.0.0", "--port", "5001", "--enable-mlserver"]
-          EOF
-          
-          # Menampilkan isian custom Dockerfile untuk verifikasi di log
-          echo "--- New Dockerfile Contents ---"
-          cat "$DOCKERFILE"
-
-          # Menjalankan proses build docker
-          echo "=== 2. Building Docker Image ==="
-          docker build -t customer-churn-prediction-system:local "$BUILD_DIR"
-          
-          echo "Docker image has been successfully built!"
+          # Menjalankan proses build Docker Image
+          mlflow models build-docker \
+            --env-manager local \
+            --base-image python:3.13.5-slim \
+            --install-mlflow \
+            -m "$LOCAL_MODEL_URI" \
+            -n "$IMAGE_NAME" 
 
       # 13) Log In to Docker Hub
       - name: Log In to Docker Hub
