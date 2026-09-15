@@ -190,7 +190,7 @@ jobs:
           echo "=== Building Docker Serving Image ==="
           # Menentukan nama Docker Image
           IMAGE_NAME="customer-churn-prediction-system"
-          DOCKERFILE_PATH = "./Dockerfile"
+          DOCKERFILE_PATH="./Dockerfile"
 
           # Menghasilkan Dockerfile dengan MLflow
           mlflow models generate-dockerfile \
