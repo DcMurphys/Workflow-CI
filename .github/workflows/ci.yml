@@ -213,7 +213,7 @@ jobs:
 
           echo "=== Building Docker Image ==="
           # Menjalankan proses build Docker dengan Dockerfile
-          docker build -t "$IMAGE_NAME:local" -f "$DOCKERFILE_PATH" "$LOCAL_MODEL_URI"
+          docker build -t "${IMAGE_NAME}:local" -f "$DOCKERFILE_PATH" "$LOCAL_MODEL_URI"
 
       # 13) Log In to Docker Hub
       - name: Log In to Docker Hub
@@ -226,15 +226,19 @@ jobs:
       - name: Tag Docker Image
         run: |
           DOCKER_USER="${{ secrets.DOCKER_HUB_USERNAME }}"
+          IMAGE_NAME="customer-churn-prediction-system"
 
           echo "=== Creating Tag Image for Docker Hub ==="
           # Menggunakan tag 'latest' untuk deployment otomatis
-          docker tag $IMAGE_NAME:local $DOCKER_USER/$IMAGE_NAME:latest
-
+          docker tag "${IMAGE_NAME}:local" "${DOCKER_USER}/${IMAGE_NAME}:latest"
+          
       # 15) Push Docker Image
       - name: Push Docker Image
         run: |
+          DOCKER_USER="${{ secrets.DOCKER_HUB_USERNAME }}"
+          IMAGE_NAME="customer-churn-prediction-system"
+          
           echo "=== Uploading Docker Image to Docker Hub Registry ==="
-          docker push $DOCKER_USER/$IMAGE_NAME:latest
+          docker push "${DOCKER_USER}/${IMAGE_NAME}:latest"
 
           echo "Successfully publishing Docker Image `$IMAGE_NAME` to Docker Hub!"
