@@ -187,29 +187,33 @@ jobs:
           LOCAL_MODEL_URI=$(dirname "$MLMODEL_PATH")
           echo "Model successfully found at: $LOCAL_MODEL_URI"
           
-          echo "=== Building Docker Serving Image ==="
+          echo "=== Generating Dockerfile ==="
           # Menentukan nama Docker Image
           IMAGE_NAME="customer-churn-prediction-system"
           DOCKERFILE_PATH="./Dockerfile"
 
-          # Menghasilkan Dockerfile dengan MLflow
-          mlflow models generate-dockerfile \
-            --env-manager local \
-            --model-uri "$LOCAL_MODEL_URI" \
-            --install-mlflow \
-            --set-docker-file-base "python:3.13.5-slim" \
-            --output-path "$DOCKERFILE_PATH" \
-            --custom-eval-lines \
-              "RUN apt-get update && apt-get install -y --no-install-recommends build-essential && rm -rf /var/lib/apt/lists/*" \
-              "RUN pip install --no-cache-dir mlflow==2.19.0" \
-              "RUN python -c \"from mlflow.models import container as C; C._install_pyfunc_deps('/opt/ml/model', install_mlflow=False, enable_mlserver=False, env_manager='local');\"" \
-              "ENV MLFLOW_DISABLE_ENV_CREATION=True" \
-              "ENV ENABLE_MLSERVER=False" \
-              "ENV GUNICORN_CMD_ARGS=\"--timeout 360 -k gevent\"" \
-              "ENTRYPOINT [\"python\", \"-c\", \"from mlflow.models import container as C; C._serve('local')\"]"
+          # Membuat file Dockerfile
+          cat << 'EOF' > "$DOCKERFILE_PATH"
+          
+          FROM python:3.13.5-slim
+          ENV MLFLOW_DISABLE_ENV_CREATION=True
+          ENV ENABLE_MLSERVER=False
+          ENV GUNICORN_CMD_ARGS="--timeout 360 -k gevent"
+          RUN apt-get update && apt-get install -y --no-install-recommends \
+              build-essential \
+              && rm -rf /var/lib/apt/lists/*
+          RUN pip install --no-cache-dir mlflow==2.19.0
+          COPY . /opt/ml/model
+          RUN python -c "from mlflow.models import container as C; C._install_pyfunc_deps('/opt/ml/model', install_mlflow=False, enable_mlserver=False, env_manager='local');"
+          ENTRYPOINT ["python", "-c", "from mlflow.models import container as C; C._serve('local')"]
+          
+          EOF
 
+          echo "Dockerfile successfully created at: $DOCKERFILE_PATH"
+
+          echo "=== Building Docker Image ==="
           # Menjalankan proses build Docker dengan Dockerfile
-          docker build -t "$IMAGE_NAME" -f "DOCKERFILE_PATH" .
+          docker build -t "$IMAGE_NAME" -f "$DOCKERFILE_PATH" "$LOCAL_MODEL_URI"
 
       # 13) Log In to Docker Hub
       - name: Log In to Docker Hub
