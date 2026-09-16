@@ -241,4 +241,4 @@ jobs:
           echo "=== Uploading Docker Image to Docker Hub Registry ==="
           docker push "${DOCKER_USER}/${IMAGE_NAME}:latest"
 
-          echo "Successfully publishing Docker Image `$IMAGE_NAME` to Docker Hub!"
+          echo "Successfully publishing Docker Image named $IMAGE_NAME to Docker Hub!"
