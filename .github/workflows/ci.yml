@@ -201,6 +201,7 @@ jobs:
           ENV GUNICORN_CMD_ARGS="--timeout 360 -k gevent"
           RUN apt-get update && apt-get install -y --no-install-recommends \
               build-essential \
+              nginx \
               && rm -rf /var/lib/apt/lists/*
           RUN pip install --no-cache-dir mlflow==2.19.0
           COPY . /opt/ml/model
