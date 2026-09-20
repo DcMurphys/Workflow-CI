@@ -1,12 +1,6 @@
 name: Trigger Model Training CI Workflow
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "MLProject/**" 
-      - ".github/workflows/main.yml"
   workflow_dispatch: # For manual triggering 
 
 env:
