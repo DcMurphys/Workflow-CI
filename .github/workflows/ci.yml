@@ -149,13 +149,12 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
 
-          # Memindahkan folder mlruns ke MLProject jika terbuat di direktori utama
+          # Memastikan direktori mlruns berada di dalam folder MLProject
           if [ -d "mlruns" ]; then
-            cp -r mlruns/* ./mlruns/ 2>/dev/null || true
-            rm -rf mlruns
+            mv mlruns MLProject/
           fi
 
-          git add ./mlruns/
+          git add MLProject/mlruns/
 
           git diff --quiet && git diff --staged --quiet || (git commit -m "Commit & push model artifacts to GitHub repository" && git push)
 
