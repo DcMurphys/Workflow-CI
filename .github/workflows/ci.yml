@@ -143,18 +143,25 @@ jobs:
         run: | 
           echo "=== Required packages already installed in previous steps! ==="
 
-      # 11) Upload model artifacts to GitHub (with GitHub Artifacts)
-      - name: Upload to GitHub
-        uses: actions/upload-artifact@v4
-        with:
-          name: mlflow-artifacts-${{ steps.extract_run_id.outputs.run_id }}
-          # Upload seluruh file artefak ke GitHub Actions
-          path: |
-            mlruns/
-            mlflow_run.log
-          
-          if-no-files-found: warn
-          retention_days: 3 # Waktu penyimpanan artefak sebelum dihapus otomatis
+      # 11) Upload model artifacts to GitHub Repository
+      - name: Upload model artifacts to GitHub Repository
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # Memastikan direktori target mlruns berada di dalam folder MLProject
+          TARGET_DIR="MLProject/mlruns/$EXP_ID/$RUN_ID/artifacts"
+          mkdir -p "$TARGET_DIR"
+
+          # Memindahkan folder mlruns ke MLProject jika terbuat di direktori utama
+          if [ -d "mlruns" ]; then
+            cp -r mlruns/* MLProject/mlruns/ 2>/dev/null || true
+            rm -rf mlruns
+          fi
+
+          git add MLProject/mlruns/
+
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Commit & push model artifacts to GitHub repository" && git push)
 
       # 12) Build Docker Model (lightweight)
       - name: Build Docker Model
