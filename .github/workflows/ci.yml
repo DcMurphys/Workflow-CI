@@ -150,8 +150,9 @@ jobs:
           git config --local user.name "github-actions[bot]"
 
           # Memastikan direktori mlruns berada di dalam folder MLProject
+          mkdir -p MLProject/mlruns
           if [ -d "mlruns" ]; then
-            mv mlruns MLProject/
+            cp -rf mlruns/* MLProject/mlruns/
           fi
 
           git add MLProject/mlruns/
