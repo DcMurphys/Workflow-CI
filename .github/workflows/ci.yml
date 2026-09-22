@@ -149,17 +149,13 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
 
-          # Memastikan direktori target mlruns berada di dalam folder MLProject
-          TARGET_DIR="MLProject/mlruns/$EXP_ID/$RUN_ID/artifacts"
-          mkdir -p "$TARGET_DIR"
-
           # Memindahkan folder mlruns ke MLProject jika terbuat di direktori utama
           if [ -d "mlruns" ]; then
-            cp -r mlruns/* MLProject/mlruns/ 2>/dev/null || true
+            cp -r mlruns/* ./mlruns/ 2>/dev/null || true
             rm -rf mlruns
           fi
 
-          git add MLProject/mlruns/
+          git add ./mlruns/
 
           git diff --quiet && git diff --staged --quiet || (git commit -m "Commit & push model artifacts to GitHub repository" && git push)
 
@@ -193,7 +189,7 @@ jobs:
           IMAGE_NAME="customer-churn-prediction-system"
           DOCKERFILE_PATH="./Dockerfile"
 
-          # Membuat file Dockerfile
+          # Membuat file Dockerfile untuk build MLflow serving model
           cat << 'EOF' > "$DOCKERFILE_PATH"
           
           FROM python:3.13.5-slim
@@ -213,8 +209,8 @@ jobs:
 
           echo "Dockerfile successfully created at: $DOCKERFILE_PATH"
 
-          echo "=== Building Docker Image ==="
-          # Menjalankan proses build Docker dengan Dockerfile
+          echo "=== Building Serving Model Image ==="
+          # Menjalankan proses build serving model image dengan Docker berdasarkan Dockerfile
           docker build -t "${IMAGE_NAME}:local" -f "$DOCKERFILE_PATH" "$LOCAL_MODEL_URI"
 
       # 13) Log In to Docker Hub
